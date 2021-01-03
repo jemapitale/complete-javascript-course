@@ -8,7 +8,8 @@ GAME RULES:
 - The first player to reach 100 points on GLOBAL score wins the game
 
 */
-var scores, roundScore, activePlayer, gamePlaying;
+var scores, roundScore, activePlayer, gamePlaying, prevRoll, winningScore;
+prevRoll = 0;
 init();
 /* 0 = 1st player, 1 = 2nd player - correlates to array index */
 
@@ -16,14 +17,15 @@ init();
 /* as we know from CSS, to select the ids we use # in the select string*/
 /* if we want to change the text, need textContent method 
 This changes the content of a HTML element.*/
-//document.querySelector("#current-" + activePlayer).textContent = diceInt;
+//document.querySelector("#current-" + activePlayer).textContent = diceInt1;
 /* Due to type coersion, JS will convert the activePlayer to string*/
 
-//document.querySelector("#current-" + activePlayer).innerHTML = '<em>' + diceInt + '</em>';
+//document.querySelector("#current-" + activePlayer).innerHTML = '<em>' + diceInt1 + '</em>';
 /* everytime we need to write HTML code, it needs to be in a string ourwise it will be interpreted as JS*/
 
 var x = document.querySelector('#score-0').textContent;
-var diceDOM = document.querySelector('.dice');
+var diceDOM1 = document.getElementById('dice-1');
+var diceDOM2 = document.getElementById('dice-2');
 console.log(x);
 
 
@@ -36,27 +38,49 @@ console.log(x);
 document.querySelector('.btn-roll').addEventListener('click', function() {
     if (gamePlaying){
     // 1. Random Number
-        var diceDec = Math.random() * 6;
-        var diceInt = Math.floor(diceDec) + 1;
-        console.log(diceInt);
+        var diceDec1 = Math.random() * 6;
+        var diceInt1 = Math.floor(diceDec1) + 1;
+        var diceDec2 = Math.random() * 6;
+        var diceInt2 = Math.floor(diceDec2) + 1;
+        
+        console.log(diceInt1);
+        console.log('prev '+ prevRoll + ' and now '+ diceInt1 + ' for player '+ (activePlayer+1));
         // These only need to be declared in this function because we don't need them from outside.
 
         // 2. Display result - need to change image to correct dice value
-        diceDOM.style.display = 'block';
-        diceDOM.src = 'dice-'+ diceInt + '.png';
+        diceDOM1.style.display = 'block';
+        diceDOM1.src = 'dice-'+ diceInt1 + '.png';
+        diceDOM2.style.display = 'block';
+        diceDOM2.src = 'dice-'+ diceInt2 + '.png';
         // the image is an img element and the source 'src' defines what is displayed
 
         // 3. Update the round score IF the rolled number was NOT a 1
-        if (diceInt !== 1){
+        if (diceInt1 !== 1 && diceInt2 !== 1 ){
             // string not equal to 1 (doesn't do type coersion)
-            roundScore += diceInt;
+            roundScore += diceInt1 + diceInt2;
             document.querySelector("#current-" + activePlayer).textContent = roundScore;
             //add score
+            // if(diceInt == 6){
+            //     checkTwoSixes(diceInt1)
+            // }
+            prevRoll = diceInt1;
+            console.log('change: prev '+ prevRoll + ' and now '+ diceInt1 + ' for player '+ (activePlayer+1));
         } else {
+            prevRoll = diceInt1;
             nextPlayer();
         }
     }
 });
+
+function checkTwoSixes(dice) {
+    if (prevRoll == dice){
+        console.log('two sixes');
+        scores[activePlayer] = 0;
+        document.querySelector('#score-' + activePlayer).textContent = scores[activePlayer];
+        nextPlayer();
+    }
+    
+}
 
 document.querySelector('.btn-hold').addEventListener('click', function() {
     if (gamePlaying){
@@ -66,10 +90,20 @@ document.querySelector('.btn-hold').addEventListener('click', function() {
         // update UI - DOM manipulation
         document.querySelector('#score-' + activePlayer).textContent = scores[activePlayer];
 
+        var input = document.querySelector('.final-score').value;
+
+        // Undefined, 0, null or "" are COERCED to false, anything else is true
+        if (input){
+            winningScore = input;
+        } else {
+            winningScore = 100;
+        }
+        console.log(winningScore);
         // check if the player has won the game
-        if (scores[activePlayer] >= 20){
+        if (scores[activePlayer] >= winningScore){
             document.querySelector('#name-'+ activePlayer).textContent = 'Player '+(activePlayer+1) + ' wins!';
-            diceDOM.style.display = 'none';  
+            diceDOM1.style.display = 'none';  
+            diceDOM2.style.display = 'none';
             // It is not always good to change the CSS style constantly t/f apply a class
             document.querySelector('.player-' + activePlayer + '-panel').classList.remove('active');
             document.querySelector('.player-' + activePlayer + '-panel').classList.add('winner');
@@ -79,6 +113,8 @@ document.querySelector('.btn-hold').addEventListener('click', function() {
         }
     }
 });
+
+
 
 function nextPlayer(){
     //next player
@@ -100,7 +136,8 @@ function nextPlayer(){
         //document.querySelector('.player-1-panel').classList.add('active');
 
         // when its the next players turn, hide the dice again
-        diceDOM.style.display = 'none';
+        diceDOM1.style.display = 'none';
+        diceDOM2.style.display = 'none';
 }
 
 function init(){
@@ -111,7 +148,8 @@ function init(){
     
     /** Set dice image to invisible on game start up */
     /** To select a class, use '.' selector */
-    document.querySelector('.dice').style.display = 'none';
+    document.getElementById('dice-1').style.display = 'none';
+    document.getElementById('dice-2').style.display = 'none';
 
     // global scores
     document.getElementById('score-0').textContent = 0;
@@ -134,3 +172,11 @@ function init(){
 }
 
 document.querySelector('.btn-new').addEventListener('click', init);
+/*
+YOUR 3 CHALLENGES
+Change the game to follow these rules:
+
+1. A player looses his ENTIRE score when he rolls two 6 in a row. After that, it's the next player's turn. (Hint: Always save the previous dice roll in a separate variable)
+2. Add an input field to the HTML where players can set the winning score, so that they can change the predefined score of 100. (Hint: you can read that value with the .value property in JavaScript. This is a good oportunity to use google to figure this out :)
+3. Add another dice to the game, so that there are two dices now. The player looses his current score when one of them is a 1. (Hint: you will need CSS to position the second dice, so take a look at the CSS code for the first one.)
+*/
