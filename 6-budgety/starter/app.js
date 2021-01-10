@@ -123,6 +123,10 @@ var UIController = (function () {
     inputBtn: '.add__btn',
     incomeContainer: '.income__list',
     expensesContainer: '.expenses__list',
+    budgetLabel: '.budget__value',
+    incomeLabel: '.budget__income--value',
+    expensesLabel: '.budget__expenses--value',
+    percentageLabel: '.budget__expenses--percentage',
   };
 
   /**
@@ -158,7 +162,7 @@ var UIController = (function () {
       //Replace the placeholder text with actual data
       newHtml = html.replace('%id', obj.id);
       newHtml = newHtml.replace('%description%', obj.description);
-      newHtml = newHtml.replace('%value', obj.value);
+      newHtml = newHtml.replace('%value%', obj.value);
 
       // Insert the HTML into the DOM using the "expenses__list" class and "income__list"
       // -  uses insertAdjacentHTML(position, text)
@@ -182,6 +186,23 @@ var UIController = (function () {
       });
 
       fieldsArr[0].focus();
+    },
+
+    displayBudget: function (obj) {
+      document.querySelector(DOMstrings.budgetLabel).textContent = obj.budget;
+      document.querySelector(DOMstrings.incomeLabel).textContent = obj.totalInc;
+      document.querySelector(DOMstrings.expensesLabel).textContent =
+        obj.totalExp;
+      document.querySelector(DOMstrings.percentageLabel).textContent =
+        obj.percentage;
+
+      // only want to display percentage if it is not equal to -1 or 0.
+      if (obj.percentage > 0) {
+        document.querySelector(DOMstrings.percentageLabel).textContent =
+          obj.percentage + '%';
+      } else {
+        document.querySelector(DOMstrings.percentageLabel).textContent = '---';
+      }
     },
 
     getDOMStrings: function () {
@@ -218,7 +239,7 @@ var controller = (function (budgetCtrl, UICtrl) {
     budget = budgetCtrl.getBudget();
 
     // 3. Display the budget on the UI.
-    console.log(budget);
+    UICtrl.displayBudget(budget);
   };
 
   var ctrlAddItem = () => {
@@ -249,6 +270,14 @@ var controller = (function (budgetCtrl, UICtrl) {
   return {
     init: function () {
       setUpEventListeners();
+      //Reset display values to 0
+      const emptyBudgetObj = {
+        budget: 0,
+        totalInc: 0,
+        totalExp: 0,
+        percentage: -1,
+      };
+      UICtrl.displayBudget(emptyBudgetObj);
     },
   };
 })(budgetController, UIController);
