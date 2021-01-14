@@ -11,6 +11,22 @@ var budgetController = (function () {
     this.id = id;
     this.description = description;
     this.value = value;
+    this.percentage = -1;
+  };
+
+  // Different prototype function which have specific tasks
+  Expense.prototype.calcPercentage = function (totalIncome) {
+    if (totalIncome > 0) {
+      this.percentage = Math.round((this.value / totalIncome) * 100);
+      console.log(this.value);
+    } else {
+      this.percentage = -1;
+    }
+  };
+
+  Expense.prototype.getPercentage = function () {
+    console.log(this.percentage);
+    return this.percentage;
   };
 
   // Function contructor (private)
@@ -75,6 +91,23 @@ var budgetController = (function () {
       return newItem;
     },
 
+    deleteItem: function (type, id) {
+      var foundId, index;
+      //map receives a callback function which also have access to the current element, current index, and entire array
+      foundId = data.allItems[type].map((current) => {
+        return current.id;
+      });
+
+      index = foundId.indexOf(id);
+
+      // only want to remove if the index exists
+      if (index !== -1) {
+        //splice is used to remove elements, whilst the spice method is used to create a copy
+        // 1st argument if splice is the position to start deleting, and the 2nd argument is the no of elements to delete
+        data.allItems[type].splice(index, 1);
+      }
+    },
+
     calculateBudget: function () {
       //setter
       // Calculate total income and expenses
@@ -91,6 +124,23 @@ var budgetController = (function () {
       } else {
         data.percentage = -1;
       }
+    },
+
+    calculatePercentages: () => {
+      /// on each expense objectw
+      data.allItems.exp.forEach((current) => {
+        current.calcPercentage(data.totals.inc);
+      });
+    },
+
+    getPercentages: () => {
+      //store all of the expense percentages in an array
+      var allPercentages = data.allItems.exp.map((current) => {
+        console.log(current.getPercentage());
+        return current.getPercentage();
+      });
+      console.log(allPercentages);
+      return allPercentages;
     },
 
     getBudget: function () {
@@ -127,6 +177,8 @@ var UIController = (function () {
     incomeLabel: '.budget__income--value',
     expensesLabel: '.budget__expenses--value',
     percentageLabel: '.budget__expenses--percentage',
+    container: '.container',
+    expensesPercLabel: '.item__percentage',
   };
 
   /**
@@ -170,6 +222,14 @@ var UIController = (function () {
       document.querySelector(element).insertAdjacentHTML('beforeend', newHtml);
     },
 
+    deleteListItem: function (selectorID) {
+      var el, parentEl;
+      //Need to move up to the parent in the DOM in order to removeChild.
+      el = document.getElementById(selectorID);
+      parentEl = el.parentNode;
+      parentEl.removeChild(el);
+    },
+
     clearFields: function () {
       var fields, fieldsArr;
       //select all and returns a list
@@ -205,6 +265,26 @@ var UIController = (function () {
       }
     },
 
+    dispayPercentages: function (percentagesArray) {
+      // returns a a node list,
+      // Need to loop over all of the elements (nodes) in the selection,
+      // then change the text content property for all of them.
+      var fields = document.querySelectorAll(DOMstrings.expensesPercLabel);
+
+      var nodeListForEach = (list, callback) => {
+        // a for loop - in each iteration calls the callback function
+        // list des have the length() method
+        for (var i = 0; i < list.length; i++) {
+          // parameters for the callback function are the current and index.
+          // current = list at position i,
+          // index = i
+          callback(list[i], i);
+        }
+      };
+
+      nodeListForEach(fields, (current, index) => {});
+    },
+
     getDOMStrings: function () {
       // Exposes DOMstrings object to make it public
       return DOMstrings;
@@ -223,11 +303,16 @@ var controller = (function (budgetCtrl, UICtrl) {
     var DOM = UICtrl.getDOMStrings();
     document.querySelector(DOM.inputBtn).addEventListener('click', ctrlAddItem);
 
+    // The callback function of the addEventListener method always has access to this event object.
     document.addEventListener('keypress', function (keyPressEvent) {
       if (keyPressEvent.keyCode === 13 || keyPressEvent.which === 13) {
         ctrlAddItem();
       }
     });
+
+    document
+      .querySelector(DOM.container)
+      .addEventListener('click', ctrlDeleteItem);
   };
 
   var updateBudget = function () {
@@ -240,6 +325,17 @@ var controller = (function (budgetCtrl, UICtrl) {
 
     // 3. Display the budget on the UI.
     UICtrl.displayBudget(budget);
+  };
+
+  var updatePercentages = () => {
+    // 1. Calculate percentages
+    budgetCtrl.calculatePercentages();
+
+    // 2. Read from budget controller
+    var percentages = budgetCtrl.getPercentages();
+
+    // 3. Update UI with new percentages
+    console.log(percentages);
   };
 
   var ctrlAddItem = () => {
@@ -260,6 +356,35 @@ var controller = (function (budgetCtrl, UICtrl) {
 
       // 5. Calculate and update the budget.
       updateBudget();
+
+      // 6. Calculate and update percentages
+      updatePercentages();
+    }
+  };
+
+  var ctrlDeleteItem = (event) => {
+    var itemID, splitID, type, ID;
+    // event is used as a paramenter of this function because we want to know what the target element of the event is.
+    // look at the target property of the event
+    itemID = event.target.parentNode.parentNode.parentNode.parentNode.id;
+
+    if (itemID) {
+      // inc-1
+      splitID = itemID.split('-');
+      type = splitID[0];
+      ID = parseInt(splitID[1]);
+
+      // 1. deete the item from the datas structure
+      budgetCtrl.deleteItem(type, ID);
+
+      // 2. Delete the item from the UI
+      UICtrl.deleteListItem(itemID);
+
+      // 3. Update and show the new budget
+      updateBudget();
+
+      // 4. Calculate and update percentages
+      updatePercentages();
     }
   };
 
